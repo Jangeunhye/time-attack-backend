@@ -49,6 +49,7 @@ const updateProfile = async (data: UpdateProfileData) => {
     where: { userId },
     data: { nickname, selfIntroduction },
   });
+
   return profile;
 };
 
