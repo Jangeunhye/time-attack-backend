@@ -5,11 +5,11 @@ import { nanoid } from "nanoid";
 import { isEmail } from "validator";
 import { JWT_SECRET_KEY } from "../../config/env.config";
 import prismaClient from "../../prisma/client.prisma";
-import { LogInDto, SignUpDto } from "./accounts.type";
+import { LogInData, SignUpData, UpdateProfileData } from "./accounts.type";
 
-const signUp = async (signUpDto: SignUpDto) => {
+const signUp = async (data: SignUpData) => {
   const id = nanoid();
-  const { email, password } = signUpDto;
+  const { email, password, nickname, selfIntroduction } = data;
 
   if (!email.trim()) throw new Error("No email");
   if (!isEmail(email)) throw new Error("Invalid email");
@@ -18,14 +18,19 @@ const signUp = async (signUpDto: SignUpDto) => {
 
   const encryptedPassword = await hash(password, 12);
   const user = await prismaClient.user.create({
-    data: { id, email, encryptedPassword },
+    data: {
+      id,
+      email,
+      encryptedPassword,
+      profile: { create: { nickname, selfIntroduction } },
+    },
   });
   const accessToken = generateAccessToken(user);
   return accessToken;
 };
 
-const logIn = async (logInDto: LogInDto) => {
-  const { email, password } = logInDto;
+const logIn = async (data: LogInData) => {
+  const { email, password } = data;
   const user = await prismaClient.user.findUnique({
     where: { email },
   });
@@ -36,6 +41,63 @@ const logIn = async (logInDto: LogInDto) => {
 
   const accessToken = generateAccessToken(user);
   return accessToken;
+};
+
+const updateProfile = async (data: UpdateProfileData) => {
+  const { nickname, selfIntroduction, userId } = data;
+  const profile = await prismaClient.userProfile.update({
+    where: { userId },
+    data: { nickname, selfIntroduction },
+  });
+  return profile;
+};
+
+const getProfile = async (userId: string) => {
+  const profile = await prismaClient.userProfile.findFirst({
+    where: { userId },
+    select: {
+      nickname: true,
+      selfIntroduction: true,
+      user: {
+        select: {
+          followers: true,
+          followings: true,
+          writtenTweets: { orderBy: { createdAt: "desc" } },
+        },
+      },
+    },
+  });
+  return profile;
+};
+
+// 내가 팔로잉하는 사람 (내가 팔로워)
+const getFollowings = async (userId: string) => {
+  const profile = await prismaClient.follow.findMany({
+    where: { followerId: userId },
+    include: {
+      following: {
+        select: {
+          profile: { select: { nickname: true, selfIntroduction: true } },
+        },
+      },
+    },
+  });
+  return profile;
+};
+
+//나를 팔로우하는 사람
+const getFollowers = async (userId: string) => {
+  const profile = await prismaClient.follow.findMany({
+    where: { followingId: userId },
+    include: {
+      follower: {
+        select: {
+          profile: { select: { nickname: true, selfIntroduction: true } },
+        },
+      },
+    },
+  });
+  return profile;
 };
 
 const generateAccessToken = (user: User) => {
@@ -50,5 +112,9 @@ const generateAccessToken = (user: User) => {
 const accountsService = {
   signUp,
   logIn,
+  updateProfile,
+  getProfile,
+  getFollowers,
+  getFollowings,
 };
 export default accountsService;
