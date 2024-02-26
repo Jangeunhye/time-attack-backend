@@ -9,7 +9,7 @@ followersController.delete("/:userId", async (req: Request, res: Response) => {
   // 삭제하고싶은 아이디
   const followerId = req.params.userId;
 
-  if (followerId === followingId) throw new Error("Same userId");
+  if (followerId === followingId) throw new Error("Same User");
 
   const follower = await followersService.deleteFollower({
     followerId,

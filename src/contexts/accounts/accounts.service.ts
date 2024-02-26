@@ -60,8 +60,7 @@ const getProfile = async (userId: string) => {
       selfIntroduction: true,
       user: {
         select: {
-          followers: true,
-          followings: true,
+          _count: { select: { followers: true, followings: true } },
           writtenTweets: { orderBy: { createdAt: "desc" } },
         },
       },

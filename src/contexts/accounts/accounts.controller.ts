@@ -60,7 +60,7 @@ accountsController.get("/:userId", async (req, res, next) => {
   res.json(userProfile);
 });
 
-// 유저 페이지에서 팔로잉 확인
+// 유저 페이지에서 유저의 팔로잉 확인
 accountsController.get(
   "/:userId/followings",
   UserOnly,
@@ -71,13 +71,13 @@ accountsController.get(
   }
 );
 
-// 유저 페이지에서 팔로워 확인
+// 유저 페이지에서 유저의 팔로워 확인
 accountsController.get(
   "/:userId/followers",
   UserOnly,
   async (req, res, next) => {
     const userId = req.user!.id;
-    const followings = await accountsService.getFollowings(userId);
+    const followings = await accountsService.getFollowers(userId);
     res.json(followings);
   }
 );
